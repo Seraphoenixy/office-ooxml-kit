@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "office_ooxml_kit"
+version = "1.0.0"
+description = "通用 Office 文档结构读写组件（DOCX 优先）"
+readme = "README.md"
+requires-python = ">=3.10"
+# 读写都要 lxml：标准库 xml.etree 序列化会丢命名空间前缀，Word 判为文件损坏。
+# 装成硬依赖，避免「读能跑、写报错」的半可用状态。
+dependencies = ["lxml>=6"]
+
+[project.scripts]
+office_ooxml_kit = "office_ooxml_kit.cli:main"
+
+[tool.setuptools]
+packages = ["office_ooxml_kit"]
+
+[tool.setuptools.package-data]
+office_ooxml_kit = ["schema/*.json"]

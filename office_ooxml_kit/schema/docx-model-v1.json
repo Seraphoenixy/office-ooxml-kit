@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "docx-model-v1",
+  "description": "office_ooxml_kit extract 的块模型输出契约。字段名沿用 form_generate/tools/docx.ps1 的既有模型，消费方可零改动切换。",
+  "type": "object",
+  "required": ["schemaVersion", "file", "sha256", "metadata", "blocks", "warnings", "ancillary"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "file": { "type": "string" },
+    "sha256": { "type": "string", "pattern": "^[0-9A-F]{64}$" },
+    "metadata": {
+      "type": "object",
+      "required": ["documentId", "version", "title"],
+      "properties": {
+        "documentId": { "type": "string" },
+        "version": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "blocks": { "type": "array", "items": { "$ref": "#/definitions/block" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "ancillary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["part", "text"],
+        "properties": { "part": { "type": "string" }, "text": { "type": "string" } }
+      }
+    }
+  },
+  "definitions": {
+    "block": {
+      "type": "object",
+      "required": ["kind", "text", "section", "sectionTitle", "category", "locator", "bodyIndex"],
+      "properties": {
+        "kind": { "enum": ["paragraph", "heading", "tableRow"] },
+        "text": { "type": "string" },
+        "number": { "type": "string", "description": "自动编号或标题编号；无编号为空串。" },
+        "style": { "type": "string", "description": "段落样式 ID；表格行不输出。" },
+        "section": { "type": "string", "description": "章节路径，各级以 ' / ' 连接。" },
+        "sectionTitle": { "type": "string", "description": "最内层标题文字。" },
+        "category": { "enum": ["front", "toc", "revision", "body"] },
+        "locator": { "type": "string" },
+        "bodyIndex": { "type": "integer", "description": "w:body 下的原始子元素序号（含 sectPr），不是已提取块计数。" },
+        "tableIndex": { "type": "integer", "description": "外层表格序号；仅表格行。" },
+        "rowIndex": { "type": "integer", "description": "表格内行序号；仅表格行。" },
+        "cells": { "type": "array", "items": { "type": "string" }, "description": "逐格可见文字，图片以 token 形式内联。" },
+        "cellImages": {
+          "type": "array",
+          "items": { "type": "array", "items": { "$ref": "#/definitions/image" } }
+        },
+        "spans": { "type": "array", "items": { "type": "integer" }, "description": "逐格 gridSpan（横向合并列数）。" },
+        "vMerge": {
+          "type": "array",
+          "items": { "enum": ["", "restart", "continue"] },
+          "description": "逐格纵向合并状态；延续格不是独立可见单元格。"
+        },
+        "grid": { "type": "array", "items": { "type": "integer" }, "description": "表格列宽（twip）。" },
+        "layout": { "type": "string", "description": "表格布局方式（fixed/autofit）。" },
+        "images": { "type": "array", "items": { "$ref": "#/definitions/image" }, "description": "段落图片；表格行不输出。" }
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": ["token", "sha256", "part", "ext", "bytes", "cx", "cy", "role"],
+      "properties": {
+        "token": { "type": "string", "pattern": "^⟦图:([0-9A-Fa-f]{8}|外链)⟧$" },
+        "sha256": { "type": "string", "description": "图片字节摘要；外链图片为空串。" },
+        "part": { "type": "string", "description": "包内部件名，或外链 URL。" },
+        "ext": { "type": "string" },
+        "bytes": { "type": "integer" },
+        "cx": { "type": "integer", "description": "EMU 宽。" },
+        "cy": { "type": "integer", "description": "EMU 高。" },
+        "role": { "enum": ["picture", "olePreview"] },
+        "name": { "type": "string", "description": "docPr 名称。" },
+        "alt": { "type": "string", "description": "docPr 描述（替代文字）。" },
+        "olePart": { "type": "string", "description": "OLE 对象部件名；非 OLE 为空串。" },
+        "external": { "const": true, "description": "仅外链图片出现该键。" }
+      }
+    }
+  }
+}
