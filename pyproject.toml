@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "office_ooxml_kit"
-version = "1.0.0"
-description = "通用 Office 文档结构读写组件（DOCX 优先）"
+version = "1.1.0"
+description = "通用 Office 文档结构读写组件（DOCX 读写、DOC 只读）"
 readme = "README.md"
 requires-python = ">=3.10"
 # 读写都要 lxml：标准库 xml.etree 序列化会丢命名空间前缀，Word 判为文件损坏。

@@ -9,7 +9,7 @@
 """
 from __future__ import annotations
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 _MISSING_LXML = ('office_ooxml_kit 需要 lxml，当前环境没有装。请执行：'
                  'python -m pip install "lxml>=6"')
@@ -19,7 +19,10 @@ try:
 except ImportError as _error:  # pragma: no cover - 依赖缺失时的分支
     raise ImportError(_MISSING_LXML) from _error
 
+from . import doc_read  # noqa: E402  —— .doc（Word 97-2003 二进制）直读
+from .doc_read import DocError  # noqa: E402
 from .docx_read import DocxError, extract, normalize  # noqa: E402
 from .package import Package, PackageError  # noqa: E402
 
-__all__ = ['Package', 'PackageError', 'DocxError', 'extract', 'normalize', '__version__']
+__all__ = ['Package', 'PackageError', 'DocxError', 'DocError', 'doc_read',
+           'extract', 'normalize', '__version__']

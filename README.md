@@ -2,8 +2,11 @@
 
 通用 Office 文档操作组件（仓库名 `office-ooxml-kit`）。把「填一份带格式的 Word 表单」这件事从一次性脚本变成可复用能力。
 
-**当前只支持 .docx（Word）。** 名字里的 OOXML 指它工作的格式层（Office Open XML / ECMA-376），
-Excel 与 PowerPoint 尚未实现——不要把它当成覆盖三种格式的套件。
+**支持 .docx（读写）与 .doc（只读，Word 97-2003 二进制）。** 名字里的 OOXML 指它工作的
+格式层（Office Open XML / ECMA-376），Excel 与 PowerPoint 尚未实现——不要把它当成覆盖
+三种格式的套件。`.doc` 直读走内置的 CFB 容器与 Word 二进制解析（`cfb.py`、`doc_read.py`），
+不调用外部转换器：二进制格式的样式/修订/图片边界在输出 `warnings` 里逐项声明，块模型与
+`.docx` 同为 `docx-model-v1`。
 
 ## 为什么有它
 
@@ -27,6 +30,8 @@ Python 3 + lxml。不是偏好问题，是被 Word 逼出来的：
 
 ```bash
 python -m office_ooxml_kit extract --path 甲.docx --output 甲.json     # 块模型（docx-model-v1）
+python -m office_ooxml_kit extract --path 乙.doc  --output 乙.json     # 同上，二进制直读
+python -m office_ooxml_kit scan    --path 甲.docx                      # 只列需人工核对的内容
 python -m office_ooxml_kit inspect --path 甲.docx --output 甲-包清单.json
 python -m office_ooxml_kit fill    --path 模板.docx --output 结果.docx --data fill.json
 python -m office_ooxml_kit verify  --path 结果.docx --baseline 甲-包清单.json

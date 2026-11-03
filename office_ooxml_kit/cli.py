@@ -10,10 +10,22 @@ import json
 import sys
 from pathlib import Path
 
-from . import docx_read, docx_write, verify
+from . import doc_read, docx_read, docx_write, verify
 from .package import PackageError
 
 __all__ = ['main']
+
+SUFFIX = {'.docx': 'docx', '.doc': 'doc'}
+
+
+def _reader(path):
+    """按扩展名选读取器：.docx 走 OOXML，.doc 走二进制格式直读。"""
+    kind = SUFFIX.get(Path(path).suffix.lower())
+    if kind == 'doc':
+        return doc_read
+    if kind == 'docx':
+        return docx_read
+    raise ValueError(f'不支持的输入格式：{path}（仅支持 .docx 与 .doc）')
 
 
 def _write_json(payload, output):
@@ -34,10 +46,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog='office_ooxml_kit', description='Office 文档结构读写组件')
     sub = parser.add_subparsers(dest='command', required=True)
 
-    p_extract = sub.add_parser('extract', help='提取 DOCX 块模型（docx-model-v1）')
-    p_extract.add_argument('--path', required=True, help='输入 DOCX')
+    p_extract = sub.add_parser('extract', help='提取 DOCX/DOC 块模型（docx-model-v1）')
+    p_extract.add_argument('--path', required=True, help='输入 DOCX 或 DOC')
     p_extract.add_argument('--output', help='输出 JSON；缺省打印到标准输出')
     p_extract.add_argument('--no-text', action='store_true', help='跳过不透明块')
+
+    p_scan = sub.add_parser('scan', help='只列出文字比较无法验证的版面内容')
+    p_scan.add_argument('--path', required=True, help='输入 DOCX 或 DOC')
+    p_scan.add_argument('--output', help='输出 JSON；缺省打印到标准输出')
 
     p_inspect = sub.add_parser('inspect', help='输出包清单、分区几何与外层表格')
     p_inspect.add_argument('--path', required=True)
@@ -57,10 +73,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'extract':
-            payload = docx_read.extract(args.path, with_text=not args.no_text)
+            reader = _reader(args.path)
+            payload = reader.extract(args.path) if reader is doc_read \
+                else reader.extract(args.path, with_text=not args.no_text)
             if args.output:
                 _write_json(payload, args.output)
                 print(f'已提取 {len(payload["blocks"])} 个块 → {args.output}')
+            else:
+                print(json.dumps(payload, ensure_ascii=False, indent=1))
+        elif args.command == 'scan':
+            payload = _reader(args.path).scan(args.path)
+            if args.output:
+                _write_json(payload, args.output)
+                print(f'已扫描 → {args.output}')
             else:
                 print(json.dumps(payload, ensure_ascii=False, indent=1))
         elif args.command == 'inspect':
@@ -78,8 +103,8 @@ def main(argv=None):
                 print(('通过' if payload['passed'] else '未通过') + f' → {args.output}')
             else:
                 print(json.dumps(payload, ensure_ascii=False, indent=1))
-    except (docx_read.DocxError, docx_write.FillError, verify.VerifyError,
-            PackageError) as error:
+    except (doc_read.DocError, docx_read.DocxError, docx_write.FillError,
+            verify.VerifyError, PackageError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 2
     return 0
